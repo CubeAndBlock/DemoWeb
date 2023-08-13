@@ -88,4 +88,63 @@ public class ProductController {
         return POST_URL + "/comment";
     }
 
+    @GetMapping("/add")
+    public String viewAdd(Model model, HttpSession session) {
+        if (!NewsUtil.isLogin(session)) {
+            return "redirect:/login";
+        }
+        model.addAttribute("categories", categoryService.list());
+        model.addAttribute("supplies", supplyService.list());
+        model.addAttribute("item", new ProductRequest());
+        return POST_URL + "/add";
+    }
+
+    @PostMapping
+    public String add(@Valid ProductRequest request, BindingResult result, Model model, HttpSession session) {
+        if (!NewsUtil.isLogin(session)) {
+            return "redirect:/login";
+        }
+        if (result.hasErrors()) {
+            return POST_URL + "add";
+        }
+
+        Product item = new Product();
+        item.setPin(request.isPin());
+        item.setProductName(request.getProductName());
+        item.setDescription(request.getDescription());
+        item.setQuantity(request.getQuantity());
+        item.setPrice(request.getPrice());
+
+        if (!request.getSize().isEmpty()) {
+            Set<Size> sizes = new HashSet<Size>();
+            for (int i = 0; i < request.getSize().split(",").length; i++) {
+                Size size = new Size(item, request.getSize().split(",")[i]);
+                sizes.add(size);
+            }
+            item.setSizes(sizes);
+        }
+
+        if (!request.getColor().isEmpty()) {
+            Set<Color> colors = new HashSet<Color>();
+            for (int i = 0; i < request.getColor().split(",").length; i++) {
+                Color color = new Color(item, request.getColor().split(",")[i]);
+                colors.add(color);
+            }
+            item.setColors(colors);
+        }
+
+        Category category = categoryService.findById(request.getCategoryId());
+        item.setCategory(category);
+
+        Supply supply = supplyService.findById(request.getSupplyId());
+        item.setSupply(supply);
+        item.setCreatedDate(new Date());
+        if (request.getImage() != null) {
+            String fileName = Calendar.getInstance().getTimeInMillis() + "_" + request.getImage().getOriginalFilename();
+            storageService.save(request.getImage(), fileName);
+            item.setImage(fileName);
+        }
+        productService.create(item);
+        return "redirect:/admin/product";
+    }
 }
