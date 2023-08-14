@@ -147,4 +147,101 @@ public class ProductController {
         productService.create(item);
         return "redirect:/admin/product";
     }
+    @GetMapping("/edit/{id}")
+    public String findById(@PathVariable("id") int id, Model model, HttpSession session) {
+        if (!NewsUtil.isLogin(session)) {
+            return "redirect:/login";
+        }
+        Product product = productService.findById(id);
+        ProductRequest request = new ProductRequest();
+        request.setCategoryId(product.getCategory().getId());
+        request.setId(id);
+        request.setProductName(product.getProductName());
+        request.setQuantity(product.getQuantity());
+        request.setPrice(product.getPrice());
+        request.setDescription(product.getDescription());
+        request.setPin(product.isPin());
+        request.setImageName(product.getImage());
+        model.addAttribute("item", request);
+        model.addAttribute("categories", categoryService.list());
+        model.addAttribute("supplies", supplyService.list());
+        return POST_URL + "/update";
+    }
+
+    @GetMapping("/view/{id}")
+    public String view(@PathVariable("id") int id, Model model, HttpSession session) {
+        if (!NewsUtil.isLogin(session)) {
+            return "redirect:/login";
+        }
+        Product product = productService.findById(id);
+
+        model.addAttribute("item", product);
+
+        return POST_URL + "/comment";
+    }
+
+    @PostMapping("/{id}")
+    public String update(@PathVariable("id") int id, @Valid ProductRequest request, BindingResult result, Model model,
+                         HttpSession session) {
+        if (!NewsUtil.isLogin(session)) {
+            return "redirect:/login";
+        }
+        if (result.hasErrors()) {
+            request.setId(id);
+            model.addAttribute("post", request);
+            return POST_URL + "/update";
+        }
+        Product product = new Product();
+        product.setPin(request.isPin());
+        product.setProductName(request.getProductName());
+        product.setQuantity(request.getQuantity());
+        product.setPrice(request.getPrice());
+        product.setDescription(request.getDescription());
+        Category category = categoryService.findById(request.getCategoryId());
+        product.setCategory(category);
+
+        Supply supply = supplyService.findById(request.getSupplyId());
+        product.setSupply(supply);
+
+        product.setCreatedDate(new Date());
+        if (request.getImage() != null) {
+            String fileName = request.getImage().getOriginalFilename() + "_" + Calendar.getInstance().getTimeInMillis();
+            storageService.save(request.getImage(), fileName);
+            product.setImage(fileName);
+        } else {
+            product.setImage(productService.findById(id).getImage());
+        }
+        productService.update(id, product);
+
+        return "redirect:/admin/product";
+    }
+
+    @GetMapping("/edit/{id}")
+    public String findById(@PathVariable("id") int id, Model model, HttpSession session) {
+        if (!NewsUtil.isLogin(session)) {
+            return "redirect:/login";
+        }
+        Product product = productService.findById(id);
+        ProductRequest request = new ProductRequest();
+        request.setCategoryId(product.getCategory().getId());
+        request.setId(id);
+        request.setProductName(product.getProductName());
+        request.setQuantity(product.getQuantity());
+        request.setPrice(product.getPrice());
+        request.setDescription(product.getDescription());
+        request.setPin(product.isPin());
+        request.setImageName(product.getImage());
+        model.addAttribute("item", request);
+        model.addAttribute("categories", categoryService.list());
+        model.addAttribute("supplies", supplyService.list());
+        return POST_URL + "/update";
+    }
+    @GetMapping("/delete/{id}")
+    public String delete(@PathVariable("id") int id, Model model, HttpSession session) {
+        if (!NewsUtil.isLogin(session)) {
+            return "redirect:/login";
+        }
+        productService.delete(id);
+        return "redirect:/admin/product";
+    }
 }
